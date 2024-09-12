@@ -1,40 +1,49 @@
-use cocoa::appkit::NSWindowCollectionBehavior;
-use tauri::{Manager, Runtime, WebviewWindow};
-use tauri_nspanel::WebviewWindowExt;
+#![cfg_attr(
+  all(not(debug_assertions), target_os = "windows"),
+  windows_subsystem = "windows"
+)]
 
-pub trait WebviewWindowExtMacos {
-  fn set_float_panel(&self, level: i32);
-}
+use tauri::{AppHandle, Manager, WebviewWindow};
+use tauri_nspanel::{panel_delegate, WebviewWindowExt};
 
-impl<R: Runtime> WebviewWindowExtMacos for WebviewWindow<R> {
-  fn set_float_panel(&self, level: i32) {
-    let panel = self.to_panel().unwrap();
-
-    panel.set_level(level);
-
-    #[allow(non_upper_case_globals)]
-    const NSWindowStyleMaskNonActivatingPanel: i32 = 1 << 7;
-
-    #[allow(non_upper_case_globals)]
-    const NSResizableWindowMask: i32 = 1 << 3;
-
-    panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel + NSResizableWindowMask);
-
-    panel.set_collection_behaviour(
-      NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces
-        | NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary,
-    );
-  }
-}
-
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
-    .setup(move |app| {
-      let window = app.get_webview_window("main").unwrap();
-      window.set_float_panel(1);
+    .plugin(tauri_nspanel::init())
+    .setup(|app| {
+      init(app.app_handle());
+
       Ok(())
     })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
+
+fn init(app_handle: &AppHandle) {
+  let window: WebviewWindow = app_handle.get_webview_window("main").unwrap();
+
+  let panel = window.to_panel().unwrap();
+
+  let delegate = panel_delegate!(MyPanelDelegate {
+    window_did_become_key,
+    window_did_resign_key
+  });
+
+  let handle = app_handle.to_owned();
+
+  delegate.set_listener(Box::new(move |delegate_name: String| {
+    match delegate_name.as_str() {
+      "window_did_become_key" => {
+        let app_name = handle.package_info().name.to_owned();
+
+        println!("[info]: {:?} panel becomes key window!", app_name);
+      }
+      "window_did_resign_key" => {
+        println!("[info]: panel resigned from key window!");
+      }
+      _ => (),
+    }
+  }));
+
+  panel.set_delegate(delegate);
+}
+
