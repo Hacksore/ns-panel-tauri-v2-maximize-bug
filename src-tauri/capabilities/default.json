@@ -12,10 +12,8 @@
     "linux"
   ],
   "permissions": [
-    "core:default",
     "core:window:allow-set-size",
     "core:window:allow-start-dragging",
-    "core:window:deny-maximize",
     "core:app:default",
     "core:event:default",
     "shell:default"
