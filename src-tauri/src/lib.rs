@@ -47,10 +47,13 @@ fn init(app_handle: &AppHandle) {
     // 1. Define a non activating window style mask
 
     #[allow(non_upper_case_globals)]
-    pub const NSWindowStyleMaskNonActivatingPanel: i32 = 1 << 7;
+    const NSWindowStyleMaskNonActivatingPanel: i32 = 1 << 7;
+
+    #[allow(non_upper_case_globals)]
+    const NSResizableWindowMask: i32 = 1 << 3;
 
     // 2. Prevents the panel from activating the app
-    panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel);
+    panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel | NSResizableWindowMask);
 
     panel.set_delegate(delegate);
 }
