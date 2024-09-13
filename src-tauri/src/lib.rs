@@ -23,6 +23,16 @@ fn init(app_handle: &AppHandle) {
 
   let panel = window.to_panel().unwrap();
 
+  #[allow(non_upper_case_globals)]
+  pub const NSWindowStyleMaskNonActivatingPanel: i32 = 1 << 7;
+
+  // BUG: this is what's causing the crash because it allows double clicking somehow
+  // which is not allowed on an nspanel
+  #[allow(non_upper_case_globals)]
+  const NSResizableWindowMask: i32 = 1 << 3;
+
+  panel.set_style_mask(NSWindowStyleMaskNonActivatingPanel + NSResizableWindowMask);
+
   let delegate = panel_delegate!(MyPanelDelegate {
     window_did_become_key,
     window_did_resign_key
@@ -46,4 +56,3 @@ fn init(app_handle: &AppHandle) {
 
   panel.set_delegate(delegate);
 }
-
